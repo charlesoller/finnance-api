@@ -1,5 +1,6 @@
 from utils import build_response
 from datetime import datetime
+import uuid
 class CompletionsService:
   def __init__(self, logger, db, client):
     self.__logger = logger
@@ -15,8 +16,11 @@ class CompletionsService:
     session_id = body['session_id']
 
     self.__save_message(user_id, session_id, "USER", message_content)
+
     completion = self.__generate(message_content)
+
     self.__save_message(user_id, session_id, "AI", completion)
+
     return build_response(200, { "body": completion })
   
   def __generate(self, message_content):
@@ -40,13 +44,14 @@ class CompletionsService:
     return response
   
   def __save_message(self, user_id, session_id, message_type, message_content):
-    timestamp = datetime.utcnow().isoformat()
+    timestamp = datetime.now()
     item = {
-        'PK': user_id,
-        'SK': session_id,
-        'MessageType': message_type,
-        'MessageContent': message_content,
-        'Timestamp': timestamp
+        'id': str(uuid.uuid4()),
+        'user_id': str(user_id),
+        'session_id': str(session_id),
+        'message_type': str(message_type),
+        'message_content': str(message_content),
+        'timestamp': str(timestamp)
     }
     self.__db.put_item(Item=item)
     return item
