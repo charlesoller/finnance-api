@@ -1,0 +1,21 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  ServerlessApi:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: python3.9
+    Properties:
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.9
+      CodeUri: .
+      Environment:
+        Variables:
+          OPENAI_API_KEY: placeholder-value  # This will be overridden by env.json
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
