@@ -1,4 +1,5 @@
 from utils import build_response
+from datetime import datetime
 class CompletionsService:
   def __init__(self, logger, db, client):
     self.__logger = logger
@@ -8,8 +9,17 @@ class CompletionsService:
   def get_all(self):
     return build_response(200, { 'Message': 'Success! Here are all of the completions...' })
   
-  def generate(self, body):
-    self.__logger.info(body)
+  def create_generation(self, body):
+    message_content = body['message_content']
+    user_id = body['user_id']
+    session_id = body['session_id']
+
+    self.__save_message(user_id, session_id, "USER", message_content)
+    completion = self.__generate(message_content)
+    self.__save_message(user_id, session_id, "AI", completion)
+    return build_response(200, { "body": completion })
+  
+  def __generate(self, message_content):
     try: 
       completion = self.__client.chat.completions.create(
         model="gpt-4o-mini",
@@ -17,7 +27,7 @@ class CompletionsService:
             {"role": "developer", "content": "You are a helpful assistant."},
             {
                 "role": "user",
-                "content": body['message']
+                "content": message_content
             }
         ]
       )
@@ -27,4 +37,16 @@ class CompletionsService:
     except Exception as e: 
       raise Exception(f'Failed to generate completion: {str(e)}')
     
-    return build_response(200, { 'body': response })
+    return response
+  
+  def __save_message(self, user_id, session_id, message_type, message_content):
+    timestamp = datetime.utcnow().isoformat()
+    item = {
+        'PK': user_id,
+        'SK': session_id,
+        'MessageType': message_type,
+        'MessageContent': message_content,
+        'Timestamp': timestamp
+    }
+    self.__db.put_item(Item=item)
+    return item

@@ -4,13 +4,14 @@ import logging
 from modules import *
 from router import Router
 from openai import OpenAI
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
 dynamodb = boto3.resource('dynamodb')
-dynamodbTableName = 'finnance'
+dynamodbTableName = 'chat_logs'
 db = dynamodb.Table(dynamodbTableName)
 
 completions_service = CompletionsService(logger, db, client)

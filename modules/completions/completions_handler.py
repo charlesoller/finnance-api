@@ -24,6 +24,6 @@ class CompletionsHandler:
         return self.__completions_service.get_all()
     elif method == post_request:
       if subpath == '/':
-        return self.__completions_service.generate(body)
+        return self.__completions_service.create_generation(body)
       
     raise Exception("No matching path found in CompletionsHandler")
