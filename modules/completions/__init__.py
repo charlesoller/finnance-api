@@ -1,2 +1,2 @@
-from modules.completions.completions_handler import *
-from modules.completions.completions_service import *
+from modules.completions.completions_handler import CompletionsHandler
+from modules.completions.completions_service import CompletionsService

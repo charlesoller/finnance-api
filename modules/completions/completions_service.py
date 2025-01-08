@@ -2,10 +2,10 @@ from utils import build_response
 from datetime import datetime
 import uuid
 class CompletionsService:
-  def __init__(self, logger, db, client):
+  def __init__(self, logger, db, openai):
     self.__logger = logger
     self.__db = db
-    self.__client = client
+    self.__openai = openai
 
   def get_all(self):
     return build_response(200, { 'Message': 'Success! Here are all of the completions...' })
@@ -25,7 +25,7 @@ class CompletionsService:
   
   def __generate(self, message_content):
     try: 
-      completion = self.__client.chat.completions.create(
+      completion = self.__openai.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
             {"role": "developer", "content": "You are a helpful assistant."},

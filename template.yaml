@@ -20,3 +20,7 @@ Resources:
           Properties:
             Path: /{proxy+}
             Method: ANY
+            Cors:
+              AllowMethods: "'GET,POST,OPTIONS'"
+              AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              AllowOrigin: "'*'"

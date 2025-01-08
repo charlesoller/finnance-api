@@ -14,10 +14,7 @@ class CompletionsHandler:
     return path
   
   def handle(self, method, path, body):
-    self.__logger.info("Method: %s", method)
-    self.__logger.info("Path: %s", path)
     subpath = self.__extract_path(path)
-    self.__logger.info("Subpath: %s", subpath)
 
     if method == get_request:
       if subpath == '/':
