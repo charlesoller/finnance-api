@@ -6,7 +6,6 @@ class SessionsService:
     self.__db = db
 
   def get_by_id(self, session_id):
-    print(f'The session ID: {session_id}')
     response = self.__db.scan(
         FilterExpression='session_id = :sid',
         ExpressionAttributeValues={
@@ -18,7 +17,6 @@ class SessionsService:
         ProjectionExpression='id, session_id, message_content, message_type, #timestamp'
     )
 
-    print(f'The response: {response}')
     if 'Items' in response:
       sorted_items = sorted(response['Items'], key=lambda x: x['timestamp'])
       return build_response(200, sorted_items)
