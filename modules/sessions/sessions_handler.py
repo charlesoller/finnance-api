@@ -19,7 +19,7 @@ class SessionsHandler:
 
         if method == get_request:
             if subpath == "/":
-              return self.__sessions_service.get_all() # Not yet implemented
+              return self.__sessions_service.get_all_session_ids()
             
             # The following is certainly a fragile way to match that will have to be more robust in the future
             elif re.fullmatch(r"[a-f0-9\-]{36}", subpath[1:]): 
