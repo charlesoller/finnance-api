@@ -1,0 +1,21 @@
+{
+  "python.linting.pylintArgs": [
+    "--rcfile=./.pylintrc"
+  ],
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": true
+    },
+  },
+  "isort.args": [
+    "--profile",
+    "black"
+  ],
+  "python.linting.flake8Enabled": true,
+  "python.linting.enabled": true,
+  "python.linting.flake8Args": [
+    "--config=.flake8"
+  ]
+}
