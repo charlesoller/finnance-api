@@ -1,4 +1,4 @@
 [flake8]
 max-line-length = 100
 ignore = F401,F403,E302
-exclude = src/utils/prompts.py
+exclude = src/utils/prompts.py,src/watcher.py

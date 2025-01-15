@@ -51,3 +51,4 @@ types-s3transfer==0.10.4
 typing_extensions==4.12.2
 urllib3==1.26.20
 virtualenv==20.28.1
+watchdog==6.0.0

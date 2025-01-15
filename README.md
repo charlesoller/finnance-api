@@ -5,8 +5,7 @@ To run locally:
 - Ensure AWS SAM CLI is installed
 - Run the following commands:
 ```bash
-sam build
-sam local start-api --env-vars env.json
+python src/watcher.py
 ```
 
 Linting: 
@@ -35,8 +34,11 @@ pre-commit run --all-files
   - You should see the console print out some Passed/Failed messages if it worked correctly
   - If it didn't work correctly, run the linting script above
 
-If adding packages run:
-pip freeze > requirements.txt
-to add to requirements.txt
+
+
 Best practices:
-- Always use absolute imports over relative imports
+- If adding any packages, always run the following to add to requirements.txt:
+```bash
+pip freeze > requirements.txt
+```
+- Always use absolute imports over relative imports (ex. src.modules.services)
