@@ -37,7 +37,6 @@ class SessionsHandler:
         """This method handles all incoming requests to the SessionsHandler"""
         subpath = self.__extract_path(path)
         session_id = self.__extract_session_id(subpath)
-
         if method == GET_REQUEST:
             if subpath == "/":
                 return self.__sessions_service.get_all_sessions_info()
@@ -45,6 +44,7 @@ class SessionsHandler:
                 return self.__sessions_service.get_session(session_id)
 
         elif method == POST_REQUEST:
+            print(f"POSTING: {body}")
             if session_id:
                 return self.__sessions_service.create_message_for_session(
                     session_id, body

@@ -18,9 +18,9 @@ class CompletionsService:
 
     def create_generation(self, session_id: str, body: GenerationRequest):
         """This method handles the entire generation flow"""
-        message_content = body.message_content
-        user_id = body.user_id
-        history = body.history
+        message_content = body["message_content"]
+        user_id = body["user_id"]
+        history = body["history"]
 
         user_message = self.__save_message(
             user_id, session_id, MessageOwner.USER, message_content, graph_data=None
@@ -49,6 +49,7 @@ class CompletionsService:
         json_mode: bool = True,
     ):
         """This method is responsible for the generation of a completion"""
+        print(f"TEST: {history}")
         try:
             params: Dict[str, Any] = {
                 "model": "gpt-4o-mini",
@@ -72,10 +73,10 @@ class CompletionsService:
     def __format_history(self, history: List[ChatMessage]):
         formatted = []
         for message in history:
-            role = message.message_type.lower()
+            role: str = message["message_type"].lower()
             if role == "ai":
                 role = "assistant"
-            formatted.append({"role": role, "content": message.message_content})
+            formatted.append({"role": role, "content": message["message_content"]})
         return formatted
 
     def __save_message(
@@ -92,7 +93,7 @@ class CompletionsService:
             "message_id": str(uuid.uuid4()),
             "user_id": str(user_id),
             "session_id": str(session_id),
-            "message_type": str(message_type),
+            "message_type": str(message_type.value),
             "message_content": str(message_content),
             "timestamp": str(timestamp),
         }

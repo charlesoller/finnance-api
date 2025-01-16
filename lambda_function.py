@@ -6,14 +6,11 @@ and routing them to the appropriate services.
 import json
 import logging
 import os
-from typing import Any, Dict, Optional
 
 import boto3
 from openai import OpenAI
 
-from src.modules.completions.completions_service import CompletionsService
-from src.modules.sessions import SessionsHandler, SessionsService
-from src.router import Router
+from src.modules import CompletionsService, SessionsHandler, SessionsService, Router
 from src.utils import OPTIONS_REQUEST
 
 logger = logging.getLogger()
@@ -39,7 +36,7 @@ sessions_handler = SessionsHandler(sessions_service)
 router = Router(sessions_handler)
 
 
-def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
+def lambda_handler(event, context):
     """Handles incoming requests and routes them based on the HTTP method and path."""
     http_method = event["httpMethod"]
     path = event["path"]
@@ -50,9 +47,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "statusCode": 200,
             "headers": {
                 "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": {
-                    "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
-                },
+                "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",  # noqa: E501
                 "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
             },
             "body": "",
@@ -61,7 +56,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     return router.handle_request(http_method, path, body)
 
 
-def get_body(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+def get_body(event):
     """Extracts and parses the body from the incoming event."""
     body = None
     if "body" in event and event["body"]:

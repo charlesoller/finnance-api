@@ -62,7 +62,7 @@ class SessionsService:
 
     def create_message_for_session(self, session_id: str, body: GenerationRequest):
         """Thid method creates a new chat within a session"""
-        history = body.history
+        history = body.get("history", [])
         is_first_message = len(history) == 0
 
         new_messages = self.__completions_service.create_generation(session_id, body)

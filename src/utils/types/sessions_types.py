@@ -1,8 +1,7 @@
-"""This module contains all of the complex types needed in the sessions module"""
+"""This module contains all session types"""
 
-from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, TypedDict
 
 
 class ChartType(str, Enum):
@@ -16,12 +15,11 @@ class ChartType(str, Enum):
 class MessageOwner(str, Enum):
     """This class contains an enum for valid message owners"""
 
-    USER = ("user",)
+    USER = "user"
     AI = "ai"
 
 
-@dataclass
-class ChartDataPoint:
+class ChartDataPoint(TypedDict):
     """
     This class represents the shape of the data for a datapoint as returned by a
     ChatGPT completion
@@ -31,16 +29,14 @@ class ChartDataPoint:
     amount: float
 
 
-@dataclass
-class GraphResponse:
+class GraphResponse(TypedDict):
     """This class represents the expected JSON response shape for a graph"""
 
     type: ChartType
     data: List[ChartDataPoint]
 
 
-@dataclass
-class ChatMessage:
+class ChatMessage(TypedDict):
     """This class represents the shape of ChatMessage data"""
 
     message_id: str
@@ -49,12 +45,11 @@ class ChatMessage:
     message_type: MessageOwner
     session_id: str
     timestamp: str
-    graph_data: Optional[GraphResponse] = None
+    graph_data: Optional[GraphResponse]
 
 
-@dataclass
-class GenerationRequest:
-    """This class represents the expected format of a generation request"""
+class GenerationRequest(TypedDict):
+    """Represents the expected format of a generation request"""
 
     user_id: str
     session_id: str
