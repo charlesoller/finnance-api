@@ -24,9 +24,9 @@ jobs:
 
       - name: Prepare deployment package
         run: |
-          cp lambda_function.py package/  # Copy your function code
+          cp -r src/ package/  # Copy your source code into the package directory
           cd package
-          zip -r ../code.zip .  # Zip the contents
+          zip -r ../code.zip .  # Zip everything inside package
 
       - name: Deploy to AWS Lambda
         uses: imehedi/actions-awscli-v2@latest
