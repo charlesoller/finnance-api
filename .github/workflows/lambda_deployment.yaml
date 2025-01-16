@@ -24,7 +24,8 @@ jobs:
 
       - name: Prepare deployment package
         run: |
-          cp -r src/ package/  # Copy your source code into the package directory
+          cp -r src/ package/  # Copy the `src` directory
+          cp lambda_function.py package/  # Copy `lambda_function.py` to the package
           cd package
           zip -r ../code.zip .  # Zip everything inside package
 
