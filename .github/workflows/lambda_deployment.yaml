@@ -14,7 +14,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.9"
+          python-version: "3.13"
 
       - name: Install dependencies
         run: |
@@ -31,21 +31,15 @@ jobs:
           # Install pydantic and its dependencies first with special handling
           pip install \
             --platform manylinux2014_x86_64 \
+            --target=package \
             --implementation cp \
-            --python-version 3.9 \
-            --only-binary=:all: \
-            --target package \
+            --python-version 3.13 \
+            --only-binary=:all: --upgrade \
             pydantic==2.10.5 \
             pydantic-core==2.27.2
 
           # Install the rest of the dependencies
-          pip install \
-            --platform manylinux2014_x86_64 \
-            --implementation cp \
-            --python-version 3.9 \
-            --only-binary=:all: \
-            --target package \
-            -r requirements.txt
+          pip install -r requirements.txt
 
       - name: Clean up unnecessary files
         run: |
