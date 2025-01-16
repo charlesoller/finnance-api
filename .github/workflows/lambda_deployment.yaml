@@ -10,7 +10,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
+      
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -22,13 +22,13 @@ jobs:
           source venv/bin/activate
           pip install -r requirements.txt -t package
 
-      - name: Install zip tool
-        uses: montudor/action-zip@v1
+      - name: Prepare deployment package
+        run: |
+          cp lambda_function.py package/  # Copy your function code
+          cd package
+          zip -r ../code.zip .  # Zip the contents
 
-      - name: Create Zip file for Lambda function
-        run: zip -r code.zip .
-
-      - name: AWS CLI v2
+      - name: Deploy to AWS Lambda
         uses: imehedi/actions-awscli-v2@latest
         with:
           args: "lambda update-function-code \
