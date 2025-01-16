@@ -20,18 +20,45 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install --upgrade build wheel
-          # Create the package directory
+
+          # Create and activate virtual environment
+          python -m venv venv
+          source venv/bin/activate
+
+          # Create package directory
           mkdir -p package
-          # Install dependencies directly into the package directory
-          pip install --platform manylinux2014_x86_64 --implementation cp --python-version 3.9 --only-binary=:all: --target package -r requirements.txt
-          # If you have any pure Python dependencies that don't have manylinux wheels, install them separately
-          pip install --target package -r requirements.txt --no-deps
+
+          # Install pydantic and its dependencies first with special handling
+          pip install \
+            --platform manylinux2014_x86_64 \
+            --implementation cp \
+            --python-version 3.9 \
+            --only-binary=:all: \
+            --target package \
+            pydantic==2.10.5 \
+            pydantic-core==2.27.2
+
+          # Install the rest of the dependencies
+          pip install \
+            --platform manylinux2014_x86_64 \
+            --implementation cp \
+            --python-version 3.9 \
+            --only-binary=:all: \
+            --target package \
+            -r requirements.txt
+
+      - name: Clean up unnecessary files
+        run: |
+          cd package
+          find . -type d -name "__pycache__" -exec rm -rf {} +
+          find . -type d -name "*.dist-info" -exec rm -rf {} +
+          find . -type d -name "*.egg-info" -exec rm -rf {} +
+          find . -type f -name "*.pyc" -delete
 
       - name: Prepare deployment package
         run: |
-          # Copy your lambda function and any other source files
           cp lambda_function.py package/
-          cp -r src/ package/
+          cp -r src/ package/ || true
           cd package
           zip -r ../deployment-package.zip .
 
