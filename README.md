@@ -1,11 +1,26 @@
 # finnance-api
 To run locally: 
-- Ensure Docker is installed and running on your desktop
+- Ensure Docker Desktop is installed and running on your desktop
   - Use `docker ps` to confirm
 - Ensure AWS SAM CLI is installed
 - Run the following commands:
 ```bash
 python src/watcher.py
+```
+
+Alternatively, to start without changes triggering a restart, you can run:
+```bash
+sam build
+sam local start-api --env-vars env.json
+```
+- This is what the watcher is running under the hood 
+
+Docker:
+- Required to run AWS services locally (Lambda, DynamoDB, API Gateway)
+- All commands are for Mac
+- To start Docker
+```bash
+open -a Docker
 ```
 
 Linting: 

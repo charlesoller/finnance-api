@@ -49,7 +49,6 @@ class CompletionsService:
         json_mode: bool = True,
     ):
         """This method is responsible for the generation of a completion"""
-        print(f"TEST: {history}")
         try:
             params: Dict[str, Any] = {
                 "model": "gpt-4o-mini",
