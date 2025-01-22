@@ -16,25 +16,41 @@ from src.utils import OPTIONS_REQUEST
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-dynamodb = boto3.resource("dynamodb")
+DYNAMODB_ENDPOINT = os.getenv("DYNAMODB_ENDPOINT")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+openai = OpenAI(api_key=OPENAI_API_KEY)
 
-CHAT_LOGS_DEV_TABLE_NAME = "chat_logs_dev"
-SESSION_INFO_DEV_TABLE_NAME = "session_info_dev"
+if os.getenv("ENV") == "local":
+    logger.info(f"Connecting to local DynamoDB at: {DYNAMODB_ENDPOINT}")
+    dynamodb = boto3.resource(
+        "dynamodb",
+        endpoint_url=DYNAMODB_ENDPOINT,
+        region_name="us-east-1",
+        aws_access_key_id="dummy",
+        aws_secret_access_key="dummy",
+    )
+else:
+    dynamodb = boto3.resource("dynamodb")  
 
-chat_logs_dev_db = dynamodb.Table(CHAT_LOGS_DEV_TABLE_NAME)
-session_info_dev_db = dynamodb.Table(SESSION_INFO_DEV_TABLE_NAME)
+CHAT_LOGS_TABLE_NAME = "chat_logs"
+SESSION_INFO_TABLE_NAME = "session_info"
 
-completions_service = CompletionsService(chat_logs_dev_db, openai)
+chat_logs_db = dynamodb.Table(CHAT_LOGS_TABLE_NAME)
+session_info_db = dynamodb.Table(SESSION_INFO_TABLE_NAME)
+
+completions_service = CompletionsService(chat_logs_db, openai)
 
 sessions_service = SessionsService(
-    logger, completions_service, chat_logs_dev_db, session_info_dev_db
+    logger, completions_service, chat_logs_db, session_info_db
 )
 sessions_handler = SessionsHandler(sessions_service)
 
 router = Router(sessions_handler)
 
+logger.info(f"DynamoDB Endpoint: {DYNAMODB_ENDPOINT}")
+logger.info(f"Environment: {os.getenv('ENV')}")
+logger.info(f"Tables available: {list(dynamodb.tables.all())}")
 
 def lambda_handler(event, context):
     """Handles incoming requests and routes them based on the HTTP method and path."""

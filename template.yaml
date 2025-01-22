@@ -13,7 +13,9 @@ Resources:
       Timeout: 30
       Environment:
         Variables:
-          OPENAI_API_KEY: placeholder-value  # This will be overridden by env.json
+          ENV: local
+          DYNAMODB_ENDPOINT: http://localhost:8000
+          OPENAI_API_KEY: placeholder-value
       Events:
         ApiEvent:
           Type: Api

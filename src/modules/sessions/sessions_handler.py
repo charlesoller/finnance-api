@@ -46,7 +46,6 @@ class SessionsHandler:
                 return self.__sessions_service.get_session(session_id)
 
         elif method == POST_REQUEST:
-            print(f"POSTING: {body}")
             if session_id:
                 return self.__sessions_service.create_message_for_session(
                     session_id, body

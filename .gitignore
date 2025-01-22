@@ -1,4 +1,6 @@
 /env.json
+.env
 .aws-sam/
 .mypy_cache/
 venv/
+ddb_cf_template.json

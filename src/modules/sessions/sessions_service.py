@@ -24,7 +24,7 @@ class SessionsService:
             response = self.__session_info_db.scan(
                 ProjectionExpression="session_id, session_name, updated_at"
             )
-            print(response)
+
             sessions_info = response.get("Items", [])
             sessions_info = [
                 {
