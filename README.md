@@ -1,9 +1,19 @@
 # finnance-api
 To run locally: 
+- Ensure you have Python v3.13.1 installed (This is used by the Lambda deployment)
+- Create virtual environment
+```bash
+python3.13 -m venv venv
+```
+- Ensure you're on the correct version
+```bash
+python --version
+```
+- If done properly, this should print Python 3.13.1
 - Install dependencies
 ```bash
-pip install requirements.txt
-pip install requirements-dev.txt
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
 ```
 - Ensure Docker Desktop is installed and running on your desktop
   - Use `docker ps` to confirm
