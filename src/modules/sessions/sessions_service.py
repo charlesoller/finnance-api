@@ -1,7 +1,7 @@
 """This module contains all functionality needed for sessions"""
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from boto3.dynamodb.conditions import Key
@@ -83,7 +83,7 @@ class SessionsService:
         if is_first_message:
             return self.__create_new_session(session_id, history)
 
-        timestamp = datetime.now().isoformat()
+        timestamp = datetime.now(timezone.utc).isoformat()
         item_count = len(history)
         updating_name = False
         session_name = ""
@@ -128,7 +128,8 @@ class SessionsService:
             raise RuntimeError(f"Failed to update session: {e}") from e
 
     def __create_new_session(self, session_id: str, history: List[ChatMessage]):
-        timestamp = datetime.now()
+        timestamp = datetime.now(timezone.utc).isoformat()
+        print(f"TIMESTAMP: {timestamp}")
         session_name = self.__generate_session_name(history)
 
         item = {

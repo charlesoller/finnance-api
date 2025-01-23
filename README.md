@@ -67,6 +67,14 @@ pre-commit run --all-files
   - You should see the console print out some Passed/Failed messages if it worked correctly
   - If it didn't work correctly, run the linting script above
 
+Common issues:
+- If you randomly can't start the server with a message like "Can't find module lambda_function", this is probably related to Docker. Run the following to stop all containers, remove them, and remove the aws build folder. Then run your watcher.py script and it should be fixed.
+```bash
+docker stop $(docker ps -a -q)
+docker stop $(docker ps -a -q)
+rm -rf .aws-sam
+```
+
 Best practices:
 - If adding any packages, always run the following to add to requirements.txt:
 ```bash

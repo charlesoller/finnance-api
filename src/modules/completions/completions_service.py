@@ -2,12 +2,10 @@
 
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from src.utils import DEV_PROMPT
-from src.utils.types import ChatMessage, GenerationRequest, GraphResponse, MessageOwner
-
+from src.utils import DEV_PROMPT, ChatMessage, GenerationRequest, GraphResponse, MessageOwner
 
 class CompletionsService:
     """This class contains all completion related functionality with OpenAI"""
@@ -87,7 +85,7 @@ class CompletionsService:
         graph_data: Optional[GraphResponse] = None,
     ):
         """This method is responsible for saving chats to the database"""
-        timestamp = datetime.now().isoformat()
+        timestamp = datetime.now(timezone.utc).isoformat()
         item = {
             "message_id": str(uuid.uuid4()),
             "user_id": str(user_id),

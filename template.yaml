@@ -5,10 +5,10 @@ Resources:
   ServerlessApi:
     Type: AWS::Serverless::Function
     Metadata:
-      BuildMethod: python3.9
+      BuildMethod: python3.13
     Properties:
       Handler: lambda_function.lambda_handler
-      Runtime: python3.9
+      Runtime: python3.13
       CodeUri: .
       Timeout: 30
       Environment:
