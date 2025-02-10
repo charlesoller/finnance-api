@@ -129,7 +129,6 @@ class SessionsService:
 
     def __create_new_session(self, session_id: str, history: List[ChatMessage]):
         timestamp = datetime.now(timezone.utc).isoformat()
-        print(f"TIMESTAMP: {timestamp}")
         session_name = self.__generate_session_name(history)
 
         item = {

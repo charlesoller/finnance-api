@@ -16,6 +16,7 @@ Resources:
           ENV: local
           DYNAMODB_ENDPOINT: http://localhost:8000
           OPENAI_API_KEY: placeholder-value
+          STRIPE_API_KEY: placeholder-value
       Events:
         ApiEvent:
           Type: Api

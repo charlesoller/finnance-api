@@ -2,6 +2,7 @@ import os
 import shutil
 import subprocess
 import time
+
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
@@ -12,7 +13,9 @@ class WatcherHandler(FileSystemEventHandler):
     def __init__(self):
         self.sam_process = None
         self.last_restart = 0
-        self.restart_cooldown = 2  # Debounce: Prevent multiple triggers in quick succession
+        self.restart_cooldown = (
+            2  # Debounce: Prevent multiple triggers in quick succession
+        )
 
     def on_modified(self, event):
         """Handles file modification events"""
@@ -64,7 +67,9 @@ class WatcherHandler(FileSystemEventHandler):
 
         print("Rebuilding and restarting API...")
         try:
-            build_result = subprocess.run(["sam", "build"], check=True, capture_output=True, text=True)
+            build_result = subprocess.run(
+                ["sam", "build"], check=True, capture_output=True, text=True
+            )
             if build_result.returncode != 0:
                 print(f"Build failed: {build_result.stderr}")
                 return
@@ -103,7 +108,7 @@ if __name__ == "__main__":
 
     try:
         while True:
-            time.sleep(3) 
+            time.sleep(3)
     except KeyboardInterrupt:
         print("\nShutting down...")
         if handler.sam_process:

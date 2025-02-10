@@ -5,7 +5,14 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from src.utils import DEV_PROMPT, ChatMessage, GenerationRequest, GraphResponse, MessageOwner
+from src.utils import (
+    DEV_PROMPT,
+    ChatMessage,
+    GenerationRequest,
+    GraphResponse,
+    MessageOwner,
+)
+
 
 class CompletionsService:
     """This class contains all completion related functionality with OpenAI"""

@@ -8,18 +8,21 @@ import logging
 import os
 
 import boto3
+import stripe
 from openai import OpenAI
 
-from src.modules import CompletionsService, SessionsHandler, SessionsService, Router
+from src.modules import CompletionsService, SessionsHandler, SessionsService, Router, FinancialConnectionsService, FinancialConnectionsHandler
 from src.utils import OPTIONS_REQUEST
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-
 DYNAMODB_ENDPOINT = os.getenv("DYNAMODB_ENDPOINT")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+STRIPE_API_KEY = os.getenv("STRIPE_API_KEY")
+
 openai = OpenAI(api_key=OPENAI_API_KEY)
+stripe.api_key = STRIPE_API_KEY
 
 if os.getenv("ENV") == "local":
     logger.info(f"Connecting to local DynamoDB at: {DYNAMODB_ENDPOINT}")
@@ -35,18 +38,22 @@ else:
 
 CHAT_LOGS_TABLE_NAME = "chat_logs"
 SESSION_INFO_TABLE_NAME = "session_info"
+CUSTOMERS_TABLE_NAME = "customers"
 
 chat_logs_db = dynamodb.Table(CHAT_LOGS_TABLE_NAME)
 session_info_db = dynamodb.Table(SESSION_INFO_TABLE_NAME)
+customers_db = dynamodb.Table(CUSTOMERS_TABLE_NAME)
 
 completions_service = CompletionsService(chat_logs_db, openai)
-
+financial_connections_service = FinancialConnectionsService(customers_db, stripe)
 sessions_service = SessionsService(
     logger, completions_service, chat_logs_db, session_info_db
 )
-sessions_handler = SessionsHandler(sessions_service)
 
-router = Router(sessions_handler)
+sessions_handler = SessionsHandler(sessions_service)
+financial_connections_handler = FinancialConnectionsHandler(financial_connections_service)
+
+router = Router(sessions_handler=sessions_handler, financial_connections_handler=financial_connections_handler)
 
 logger.info(f"DynamoDB Endpoint: {DYNAMODB_ENDPOINT}")
 logger.info(f"Environment: {os.getenv('ENV')}")
