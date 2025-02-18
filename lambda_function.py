@@ -71,7 +71,7 @@ def lambda_handler(event, context):
             "headers": {
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",  # noqa: E501
-                "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+                "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
             },
             "body": "",
         }

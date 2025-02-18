@@ -28,6 +28,64 @@ class FinancialConnectionsService:
         client_secret = self.__create_session(customer_id)
         return client_secret
 
+    def __create_session(self, customer_id: str):
+        """Creates the session for authorizing via Stripe"""
+        res = self.__stripe.financial_connections.Session.create(
+            account_holder={"type": "customer", "customer": str(customer_id)},
+            permissions=["balances", "transactions"],
+        )
+
+        secret = res.get("client_secret", "")
+        return secret
+
+    def get_accounts(self, customer_id: str):
+        """Gets all accounts for a user given their customer ID"""
+        accounts = self.__stripe.financial_connections.Account.list(
+            account_holder={"customer": str(customer_id)}, limit=100
+        )
+
+        data = [
+            account
+            for account in accounts.get("data", [])
+            if account.status != "disconnected"
+        ]
+
+        for account in data:
+            if account.balance_refresh is None and account.status == "active":
+                self.__subscribe_to_acct(account.id)
+                self.__refresh_balance(account.id)
+
+        return data
+
+    def get_account_by_id(self, account_id: str):
+        """Gets an account by its ID"""
+        account = self.__stripe.financial_connections.Account.retrieve(account_id)
+
+        return account
+
+    def get_customer_by_email(self, email: str):
+        """Gets a customer record from DDB from the user's email"""
+        res = self.__db.get_item(Key={"email": email})
+
+        item = res.get("Item", {})
+        return item
+
+    def get_transactions(self, account_id: str):
+        """Gets transactions for an acount given its id"""
+        transactions = self.__stripe.financial_connections.Transaction.list(
+            account=account_id, limit=100
+        )
+
+        data = transactions.get("data", [])
+        return data
+
+    def disconnect_account(self, account_id: str):
+        """Disconnects the account with the given account ID from a users profile"""
+        res = self.__stripe.financial_connections.Account.disconnect(account_id)
+
+        data = res.get("data", {})
+        return data
+
     def __create_customer(self, email):
         """Creates a new Stripe customer and inserts data into DynamoDB"""
         new_customer = self.__stripe.Customer.create(email=email)
@@ -42,37 +100,6 @@ class FinancialConnectionsService:
 
         self.__db.put_item(Item=item)
 
-        return item
-
-    def __create_session(self, customer_id: str):
-        """Creates the session for authorizing via Stripe"""
-        res = self.__stripe.financial_connections.Session.create(
-            account_holder={"type": "customer", "customer": str(customer_id)},
-            permissions=["balances", "transactions"],
-        )
-
-        secret = res.get("client_secret", "")
-        return secret
-
-    def get_accounts(self, customer_id: str):
-        """Gets all accounts for a user given their customer ID"""
-        accounts = self.__stripe.financial_connections.Account.list(
-            account_holder={"customer": str(customer_id)}
-        )
-        data = accounts.get("data", [])
-
-        for account in data:
-            if account.balance_refresh is None and account.status != "inactive":
-                self.__subscribe_to_acct(account.id)
-                self.__refresh_balance(account.id)
-
-        return data
-
-    def get_customer_by_email(self, email: str):
-        """Gets a customer record from DDB from the user's email"""
-        res = self.__db.get_item(Key={"email": email})
-
-        item = res.get("Item", {})
         return item
 
     def __subscribe_to_acct(self, account_id: str):
