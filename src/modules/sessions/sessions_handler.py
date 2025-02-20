@@ -8,6 +8,7 @@ from src.utils import (
     SESSIONS_PATH,
     GenerationRequest,
     NotFoundException,
+    build_response,
 )
 
 
@@ -41,14 +42,20 @@ class SessionsHandler:
 
         if method == GET_REQUEST:
             if subpath == "/":
-                return self.__sessions_service.get_all_sessions_info()
+                return build_response(
+                    200, self.__sessions_service.get_all_sessions_info()
+                )
             if session_id:
-                return self.__sessions_service.get_session(session_id)
-
-        elif method == POST_REQUEST:
+                return build_response(
+                    200, self.__sessions_service.get_session(session_id)
+                )
+        if method == POST_REQUEST:
             if session_id:
-                return self.__sessions_service.create_message_for_session(
-                    session_id, body
+                return build_response(
+                    200,
+                    body=self.__sessions_service.create_message_for_session(
+                        session_id=session_id, body=body
+                    ),
                 )
 
         raise NotFoundException(

@@ -53,6 +53,7 @@ class GenerationRequest(TypedDict):
 
     user_id: str
     session_id: str
+    thread_id: str
     message_content: str
     history: List[ChatMessage]
     use_graph: bool

@@ -11,8 +11,10 @@ import boto3
 import stripe
 from openai import OpenAI
 
-from src.modules import CompletionsService, SessionsHandler, SessionsService, Router, FinancialConnectionsService, FinancialConnectionsHandler
-from src.utils import OPTIONS_REQUEST
+from src.modules import SessionsHandler, SessionsService, Router, FinancialConnectionsService, FinancialConnectionsHandler
+from src.utils import ( 
+  OPTIONS_REQUEST
+)
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -44,16 +46,22 @@ chat_logs_db = dynamodb.Table(CHAT_LOGS_TABLE_NAME)
 session_info_db = dynamodb.Table(SESSION_INFO_TABLE_NAME)
 customers_db = dynamodb.Table(CUSTOMERS_TABLE_NAME)
 
-completions_service = CompletionsService(chat_logs_db, openai)
-financial_connections_service = FinancialConnectionsService(customers_db, stripe)
+financial_connections_service = FinancialConnectionsService(
+    db=customers_db, 
+    stripe=stripe
+)
 sessions_service = SessionsService(
-    logger, completions_service, chat_logs_db, session_info_db
+    chat_logs_db=chat_logs_db, 
+    session_info_db=session_info_db
 )
 
 sessions_handler = SessionsHandler(sessions_service)
 financial_connections_handler = FinancialConnectionsHandler(financial_connections_service)
 
-router = Router(sessions_handler=sessions_handler, financial_connections_handler=financial_connections_handler)
+router = Router(
+    sessions_handler=sessions_handler, 
+    financial_connections_handler=financial_connections_handler
+)
 
 logger.info(f"DynamoDB Endpoint: {DYNAMODB_ENDPOINT}")
 logger.info(f"Environment: {os.getenv('ENV')}")
