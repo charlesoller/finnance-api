@@ -2,116 +2,108 @@
 
 import re
 
-from src.utils import (
-    DELETE_REQUEST,
-    FINANCIAL_CONNECTIONS_PATH,
-    GET_REQUEST,
-    POST_REQUEST,
-    NotFoundException,
-    build_response,
-)
+from fastapi import APIRouter, HTTPException
+from pydantic import EmailStr
 
 
 class FinancialConnectionsHandler:
-    """This class is responsible for handling any requests to /sessions"""
+    """This class is responsible for handling financial connections requests"""
 
     def __init__(self, financial_connections_service):
+        self.router = APIRouter(
+            prefix="/financial-connections", tags=["financial-connections"]
+        )
         self.__financial_connections_service = financial_connections_service
+        self.__setup_routes()
 
-    def __extract_path(self, path: str):
-        """This method extracts the base session path"""
-        base = FINANCIAL_CONNECTIONS_PATH
-        if path == base:
-            return "/"
-        if path.startswith(base):
-            start = len(base)
-            return path[start:]
-        return path
-
-    def __extract_customer_id(self, path: str):
-        """This method gets the customer ID when the request is targeted to /accounts/:customerId"""
-
-        match = re.fullmatch(r"/accounts/(cus_[a-zA-Z0-9]{12,})", path)
-        if match:
-            return match.group(1)
-        return None
-
-    def __extract_account_id(self, path: str):
-        """
-        This method gets the accountId when the request is targeted to
-        /transactions|accounts/:transactionId
-        """
-
-        match = re.fullmatch(r"/(?:transactions|accounts)/(fca_[a-zA-Z0-9]{24})", path)
-        if match:
-            return match.group(1)
-        return None
-
-    def __extract_email(self, path: str):
-        """This method gets the email when the request is targeted to /accounts/:email"""
-
-        # Match an email pattern (simple regex for validation) in the path
-        match = re.fullmatch(
-            r"/accounts/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})", path
+    def __setup_routes(self):
+        """Initializes all routes"""
+        # Accounts routes
+        self.router.get("/accounts/customer/{customer_id}")(
+            self.get_accounts_by_customer
         )
+        self.router.get("/accounts/email/{email}")(self.get_customer_by_email)
+        self.router.get("/accounts/{account_id}")(self.get_account_by_id)
+        self.router.delete("/accounts/{account_id}")(self.disconnect_account)
 
-        if match:
-            return match.group(1)
-        return None
+        # Transactions routes
+        self.router.get("/transactions/{account_id}")(self.get_transactions)
 
-    def handle(self, method, path: str, body):
-        """This method handles incoming requests directed to financial-connections"""
-        subpath = self.__extract_path(path)
-        customer_id = self.__extract_customer_id(subpath)
-        account_id = self.__extract_account_id(subpath)
-        email = self.__extract_email(subpath)
-        print(f"The subpath: {subpath}")
-        print(f"Acct ID: {account_id}")
+        # Customer routes
+        self.router.post("/customers")(self.handle_auth_flow)
 
-        if method == GET_REQUEST:
-            if subpath.startswith("/accounts"):
-                if customer_id:
-                    return build_response(
-                        200,
-                        self.__financial_connections_service.get_accounts(customer_id),
-                    )
-                if email:
-                    return build_response(
-                        200,
-                        self.__financial_connections_service.get_customer_by_email(
-                            email
-                        ),
-                    )
-                if account_id:
-                    return build_response(
-                        200,
-                        self.__financial_connections_service.get_account_by_id(
-                            account_id
-                        ),
-                    )
-            if subpath.startswith("/transactions"):
-                if account_id:
-                    return build_response(
-                        200,
-                        self.__financial_connections_service.get_transactions(
-                            account_id
-                        ),
-                    )
-        if method == POST_REQUEST:
-            if subpath == "/customers":
-                return build_response(
-                    200, self.__financial_connections_service.handle_auth_flow(body)
-                )
-        if method == DELETE_REQUEST:
-            if subpath.startswith("/accounts"):
-                if account_id:
-                    return build_response(
-                        200,
-                        self.__financial_connections_service.disconnect_account(
-                            account_id
-                        ),
-                    )
+    def __validate_customer_id(self, customer_id: str) -> bool:
+        """Validates the customer ID format"""
+        return bool(re.fullmatch(r"cus_[a-zA-Z0-9]{12,}", customer_id))
 
-        raise NotFoundException(
-            f"No matching path found for method={method}, path={path}"
-        )
+    def __validate_account_id(self, account_id: str) -> bool:
+        """Validates the account ID format"""
+        return bool(re.fullmatch(r"fca_[a-zA-Z0-9]{24}", account_id))
+
+    async def get_accounts_by_customer(self, customer_id: str):
+        """Get accounts for a specific customer"""
+        if not self.__validate_customer_id(customer_id):
+            raise HTTPException(status_code=400, detail="Invalid customer ID format")
+
+        try:
+            return self.__financial_connections_service.get_accounts(customer_id)
+        except Exception as e:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Customer not found: {customer_id}\n\nError: {e}",
+            ) from e
+
+    async def get_customer_by_email(self, email: EmailStr):
+        """Get customer information by email"""
+
+        try:
+            return self.__financial_connections_service.get_customer_by_email(
+                str(email)
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Customer not found for email: {email}\n\nError: {e}",
+            ) from e
+
+    async def get_account_by_id(self, account_id: str):
+        """Get account by ID"""
+        if not self.__validate_account_id(account_id):
+            raise HTTPException(status_code=400, detail="Invalid account ID format")
+
+        try:
+            return self.__financial_connections_service.get_account_by_id(account_id)
+        except Exception as e:
+            raise HTTPException(
+                status_code=404, detail=f"Account not found: {account_id}\n\nError: {e}"
+            ) from e
+
+    async def get_transactions(self, account_id: str):
+        """Get transactions for a specific account"""
+        if not self.__validate_account_id(account_id):
+            raise HTTPException(status_code=400, detail="Invalid account ID format")
+
+        try:
+            return self.__financial_connections_service.get_transactions(account_id)
+        except Exception as e:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Transactions not found for account: {account_id}\n\nError: {e}",
+            ) from e
+
+    async def handle_auth_flow(self, body):
+        """Handle customer authentication flow"""
+        try:
+            return self.__financial_connections_service.handle_auth_flow(body.dict())
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e)) from e
+
+    async def disconnect_account(self, account_id: str):
+        """Disconnect a specific account"""
+        if not self.__validate_account_id(account_id):
+            raise HTTPException(status_code=400, detail="Invalid account ID format")
+
+        try:
+            return self.__financial_connections_service.disconnect_account(account_id)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e)) from e

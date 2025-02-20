@@ -2,62 +2,42 @@
 
 import re
 
-from src.utils import (
-    GET_REQUEST,
-    POST_REQUEST,
-    SESSIONS_PATH,
-    GenerationRequest,
-    NotFoundException,
-    build_response,
-)
+from fastapi import APIRouter, HTTPException
 
 
 class SessionsHandler:
     """This class is responsible for handling any requests to /sessions"""
 
     def __init__(self, sessions_service):
+        self.router = APIRouter(prefix="/sessions", tags=["sessions"])
         self.__sessions_service = sessions_service
+        self.__setup_routes()
 
-    def __extract_path(self, path: str):
-        """This method extracts the base session path"""
-        base = SESSIONS_PATH
-        if path == base:
-            return "/"
-        if path.startswith(base):
-            start = len(base)
-            return path[start:]
-        return path
+    def __setup_routes(self):
+        """Initializes all routes"""
+        self.router.get("")(self.get_all_sessions)
+        self.router.get("/{session_id}")(self.get_session)
 
-    def __extract_session_id(self, path: str):
-        """This method gets the session ID when the request is targeted to /sessions/:sessionId"""
+    async def get_all_sessions(self):
+        """Get information for all sessions"""
+        try:
+            return self.__sessions_service.get_all_sessions_info()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e)) from e
 
-        if re.fullmatch(r"[a-f0-9\-]{36}", path[1:]):
-            return path[1:]
-        return None
+    async def get_session(self, session_id: str):
+        """Get information for a specific session"""
+        if not self.__validate_session_id(session_id):
+            raise HTTPException(status_code=400, detail="Invalid session ID format")
 
-    def handle(self, method, path: str, body: GenerationRequest):
-        """This method handles all incoming requests to the SessionsHandler"""
-        subpath = self.__extract_path(path)
-        session_id = self.__extract_session_id(subpath)
+        try:
+            return self.__sessions_service.get_session(session_id)
+        except Exception as e:
+            raise HTTPException(
+                status_code=404, detail=f"Session not found: {session_id}\n\nError: {e}"
+            ) from e
 
-        if method == GET_REQUEST:
-            if subpath == "/":
-                return build_response(
-                    200, self.__sessions_service.get_all_sessions_info()
-                )
-            if session_id:
-                return build_response(
-                    200, self.__sessions_service.get_session(session_id)
-                )
-        if method == POST_REQUEST:
-            if session_id:
-                return build_response(
-                    200,
-                    body=self.__sessions_service.create_message_for_session(
-                        session_id=session_id, body=body
-                    ),
-                )
+    def __validate_session_id(self, session_id: str) -> bool:
+        """Validates the session ID format"""
 
-        raise NotFoundException(
-            f"No matching path found for method={method}, path={path}"
-        )
+        return bool(re.fullmatch(r"[a-f0-9\-]{36}", session_id))
