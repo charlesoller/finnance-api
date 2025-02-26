@@ -79,6 +79,12 @@ class FinancialConnectionsService:
         data = transactions.get("data", [])
         return data
 
+    def get_transaction_by_id(self, txn_id: str):
+        """Gets an transaction by its ID"""
+        transaction = self.__stripe.financial_connections.Transaction.retrieve(txn_id)
+
+        return transaction
+
     def disconnect_account(self, account_id: str):
         """Disconnects the account with the given account ID from a users profile"""
         res = self.__stripe.financial_connections.Account.disconnect(account_id)

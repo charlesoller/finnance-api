@@ -24,10 +24,11 @@ class FinancialConnectionsHandler:
         )
         self.router.get("/accounts/email/{email}")(self.get_customer_by_email)
         self.router.get("/accounts/{account_id}")(self.get_account_by_id)
+        self.router.get("/accounts/{account_id}/transactions")(self.get_transactions)
         self.router.delete("/accounts/{account_id}")(self.disconnect_account)
 
         # Transactions routes
-        self.router.get("/transactions/{account_id}")(self.get_transactions)
+        self.router.get("/transactions/{transaction_id}")(self.get_transaction)
 
         # Customer routes
         self.router.post("/customers")(self.handle_auth_flow)
@@ -76,6 +77,18 @@ class FinancialConnectionsHandler:
         except Exception as e:
             raise HTTPException(
                 status_code=404, detail=f"Account not found: {account_id}\n\nError: {e}"
+            ) from e
+
+    async def get_transaction(self, transaction_id: str):
+        """Gets a transaction by its ID"""
+        try:
+            return self.__financial_connections_service.get_transaction_by_id(
+                transaction_id
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Transaction not found: {transaction_id}\n\nError: {e}",
             ) from e
 
     async def get_transactions(self, account_id: str):
