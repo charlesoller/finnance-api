@@ -66,7 +66,6 @@ financial_connections_handler = FinancialConnectionsHandler(
 
 # App Setup
 app = FastAPI()
-handler = Mangum(app)
 
 app.add_middleware(
     CORSMiddleware,
@@ -85,3 +84,5 @@ app.include_router(financial_connections_handler.router)
 async def root():
     """Test Hello World route"""
     return {"message": "Hello World"}
+
+handler = Mangum(app)
