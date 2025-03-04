@@ -3,9 +3,10 @@
 import re
 
 from fastapi import APIRouter, HTTPException
-from pydantic import EmailStr
-
-
+from pydantic import BaseModel, EmailStr
+class CustomerAuthRequest(BaseModel):
+    """Request format for authorizing via Stripe"""
+    email: EmailStr
 class FinancialConnectionsHandler:
     """This class is responsible for handling financial connections requests"""
 
@@ -104,10 +105,10 @@ class FinancialConnectionsHandler:
                 detail=f"Transactions not found for account: {account_id}\n\nError: {e}",
             ) from e
 
-    async def handle_auth_flow(self, body):
+    async def handle_auth_flow(self, body: CustomerAuthRequest):
         """Handle customer authentication flow"""
         try:
-            return self.__financial_connections_service.handle_auth_flow(body.dict())
+            return self.__financial_connections_service.handle_auth_flow(body)
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e)) from e
 

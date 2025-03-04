@@ -15,7 +15,7 @@ class FinancialConnectionsService:
     def handle_auth_flow(self, body):
         """Handles the auth flow for integrating with Stripe"""
         customer_id = ""
-        email = body.get("email", "")
+        email = body.email
         if not len(email) > 0:
             raise RuntimeError("No email found in body of request")
 
