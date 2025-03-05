@@ -85,4 +85,5 @@ async def root():
     """Test Hello World route"""
     return {"message": "Hello World"}
 
+
 handler = Mangum(app)

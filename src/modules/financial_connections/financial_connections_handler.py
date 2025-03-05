@@ -4,9 +4,14 @@ import re
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr
+
+
 class CustomerAuthRequest(BaseModel):
     """Request format for authorizing via Stripe"""
+
     email: EmailStr
+
+
 class FinancialConnectionsHandler:
     """This class is responsible for handling financial connections requests"""
 
@@ -26,13 +31,11 @@ class FinancialConnectionsHandler:
         self.router.get("/accounts/email/{email}")(self.get_customer_by_email)
         self.router.get("/accounts/{account_id}")(self.get_account_by_id)
         self.router.get("/accounts/{account_id}/transactions")(self.get_transactions)
+        self.router.post("/accounts")(self.handle_auth_flow)
         self.router.delete("/accounts/{account_id}")(self.disconnect_account)
 
         # Transactions routes
         self.router.get("/transactions/{transaction_id}")(self.get_transaction)
-
-        # Customer routes
-        self.router.post("/customers")(self.handle_auth_flow)
 
     def __validate_customer_id(self, customer_id: str) -> bool:
         """Validates the customer ID format"""
