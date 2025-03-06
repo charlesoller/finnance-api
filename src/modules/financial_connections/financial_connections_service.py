@@ -85,6 +85,51 @@ class FinancialConnectionsService:
 
         return transaction
 
+    def get_customer_transactions(self, customer_id: str):
+        """Gets all transactions for a customer, grouped by day with running totals"""
+        accounts = self.get_accounts(customer_id=customer_id)
+        curr_total = self.__get_current_accounts_total(accounts)
+
+        # Collect all transactions from all accounts
+        all_transactions = []
+        for account in accounts:
+            try:
+                account_transactions = self.get_transactions(account.id)
+                all_transactions.extend(account_transactions)
+            except Exception as e:
+                print(e)
+
+        # Group transactions by day
+        transactions_by_day = {}
+
+        # Sort transactions by date (newest first)
+        all_transactions.sort(key=lambda x: x.get("transacted_at", 0), reverse=True)
+
+        # Start with current total and work backwards
+        running_total = curr_total
+
+        for transaction in all_transactions:
+            # Convert timestamp to date string (YYYY-MM-DD)
+            timestamp = transaction.get("transacted_at", 0)
+            date = datetime.fromtimestamp(timestamp, tz=timezone.utc).strftime(
+                "%Y-%m-%d"
+            )
+
+            # Subtract transaction amount from running total (since we're going backwards)
+            amount = transaction.get("amount", 0)
+            running_total -= amount
+
+            # Initialize or update the day's entry
+            transactions_by_day[date] = running_total
+
+        # Convert to list of dicts format
+        daily_totals = [
+            {"date": date, "total": total}
+            for date, total in transactions_by_day.items()
+        ]
+
+        return daily_totals
+
     def disconnect_account(self, account_id: str):
         """Disconnects the account with the given account ID from a users profile"""
         res = self.__stripe.financial_connections.Account.disconnect(account_id)
@@ -122,5 +167,28 @@ class FinancialConnectionsService:
         res = self.__stripe.financial_connections.Account.refresh_account(
             account_id, features=["balance"]
         )
-        print(f"The refresh val: {res}")
+
         return res
+
+    def __get_current_accounts_total(self, accounts):
+        total = 0
+        for account in accounts:
+            try:
+                balance = getattr(account, "balance", None)
+                if balance is None:
+                    continue
+
+                current = getattr(balance, "current", None)
+                if current is None:
+                    continue
+
+                usd = getattr(current, "usd", 0)
+
+                if account.category == "credit":
+                    total -= usd
+                else:
+                    total += usd
+            except AttributeError:
+                continue
+
+        return total

@@ -35,6 +35,9 @@ class FinancialConnectionsHandler:
         self.router.delete("/accounts/{account_id}")(self.disconnect_account)
 
         # Transactions routes
+        self.router.get("/transactions/customer/{customer_id}")(
+            self.get_customer_transactions
+        )
         self.router.get("/transactions/{transaction_id}")(self.get_transaction)
 
     def __validate_customer_id(self, customer_id: str) -> bool:
@@ -93,6 +96,18 @@ class FinancialConnectionsHandler:
             raise HTTPException(
                 status_code=404,
                 detail=f"Transaction not found: {transaction_id}\n\nError: {e}",
+            ) from e
+
+    async def get_customer_transactions(self, customer_id: str):
+        """Gets broad transaction data for a customer"""
+        try:
+            return self.__financial_connections_service.get_customer_transactions(
+                customer_id
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Customer not found: {customer_id}\n\nError: {e}",
             ) from e
 
     async def get_transactions(self, account_id: str):
