@@ -51,9 +51,7 @@ class FinancialConnectionsService:
         ]
 
         for account in data:
-            if account.balance_refresh is None and account.status == "active":
-                self.__subscribe_to_acct(account.id)
-                self.__refresh_balance(account.id)
+            self.__update_account(account=account)
 
         return data
 
@@ -100,7 +98,8 @@ class FinancialConnectionsService:
                 print(e)
 
         # Group transactions by day
-        transactions_by_day = {}
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        transactions_by_day = {today: curr_total}
 
         # Sort transactions by date (newest first)
         all_transactions.sort(key=lambda x: x.get("transacted_at", 0), reverse=True)
@@ -162,7 +161,7 @@ class FinancialConnectionsService:
 
         return res
 
-    def __refresh_balance(self, account_id: str):
+    def __refresh_account_balance(self, account_id: str):
         """Refreshes the balance for an account"""
         res = self.__stripe.financial_connections.Account.refresh_account(
             account_id, features=["balance"]
@@ -170,7 +169,16 @@ class FinancialConnectionsService:
 
         return res
 
+    def __refresh_account_transactions(self, account_id: str):
+        """Refreshes the transactions for an account"""
+        res = self.__stripe.financial_connections.Account.refresh_account(
+            account_id, features=["transactions"]
+        )
+
+        return res
+
     def __get_current_accounts_total(self, accounts):
+        """Sums up total account balances given all of a customers accountsdf"""
         total = 0
         for account in accounts:
             try:
@@ -192,3 +200,28 @@ class FinancialConnectionsService:
                 continue
 
         return total
+
+    def __update_account(self, account):
+        """Performs approriate update actions on an account"""
+        if account.balance_refresh is None and account.status == "active":
+            self.__subscribe_to_acct(account_id=account.id)
+            self.__refresh_account_balance(account_id=account.id)
+            self.__refresh_account_transactions(account_id=account.id)
+        else:
+            balance_refresh = account.get("balance_refresh", {})
+            transaction_refresh = account.get("transaction_refresh", {})
+
+            bal_timestamp = balance_refresh.get("next_refresh_available_at", None)
+            tx_timestamp = transaction_refresh.get("next_refresh_available_at", None)
+            current_time = datetime.now(timezone.utc)
+
+            if bal_timestamp:
+                next_bal_refresh = datetime.fromtimestamp(
+                    bal_timestamp, tz=timezone.utc
+                )
+                if current_time >= next_bal_refresh:
+                    self.__refresh_account_balance(account_id=account.id)
+            if tx_timestamp:
+                next_tx_refresh = datetime.fromtimestamp(tx_timestamp, tz=timezone.utc)
+                if current_time >= next_tx_refresh:
+                    self.__refresh_account_transactions(account_id=account.id)
