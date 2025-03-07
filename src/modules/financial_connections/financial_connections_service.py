@@ -182,18 +182,17 @@ class FinancialConnectionsService:
         total = 0
         for account in accounts:
             try:
-                balance = getattr(account, "balance", None)
+                balance = account.get("balance", None)
                 if balance is None:
                     continue
 
-                current = getattr(balance, "current", None)
+                current = balance.get("current", None)
                 if current is None:
                     continue
 
                 usd = getattr(current, "usd", 0)
-
                 if account.category == "credit":
-                    total -= usd
+                    total -= abs(usd)
                 else:
                     total += usd
             except AttributeError:
