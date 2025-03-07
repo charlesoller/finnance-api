@@ -1,6 +1,7 @@
 """This module contains the handler for all Financial Connections functionality"""
 
 import re
+from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr
@@ -98,11 +99,17 @@ class FinancialConnectionsHandler:
                 detail=f"Transaction not found: {transaction_id}\n\nError: {e}",
             ) from e
 
-    async def get_customer_transactions(self, customer_id: str):
+    async def get_customer_transactions(
+        self, customer_id: str, omit: Optional[str] = None
+    ):
         """Gets broad transaction data for a customer"""
         try:
+            omit_list = []
+            if omit:
+                omit_list = [item.replace("?", "") for item in omit.split(",")]
+
             return self.__financial_connections_service.get_customer_transactions(
-                customer_id
+                customer_id, omit_list
             )
         except Exception as e:
             raise HTTPException(

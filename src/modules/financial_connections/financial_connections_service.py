@@ -3,6 +3,7 @@ This module contains all logic needed for interacting with the Stripe Financial 
 """
 
 from datetime import datetime, timezone
+from typing import List
 
 
 class FinancialConnectionsService:
@@ -83,9 +84,10 @@ class FinancialConnectionsService:
 
         return transaction
 
-    def get_customer_transactions(self, customer_id: str):
+    def get_customer_transactions(self, customer_id: str, omit: List[str]):
         """Gets all transactions for a customer, grouped by day with running totals"""
         accounts = self.get_accounts(customer_id=customer_id)
+        accounts = [account for account in accounts if account.id not in omit]
         curr_total = self.__get_current_accounts_total(accounts)
 
         # Collect all transactions from all accounts
