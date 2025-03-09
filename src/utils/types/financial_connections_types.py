@@ -9,8 +9,8 @@ class TransactionRange(str, Enum):
 
     WEEK = "week"
     MONTH = "month"
-    YEAR = "year"
-    ALL = "all"
+    THREE_MONTH = "threeMonth"
+    SIX_MONTH = "sixMonth"
 
 
 class TransactionData(TypedDict):

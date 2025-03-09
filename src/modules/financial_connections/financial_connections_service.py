@@ -71,7 +71,7 @@ class FinancialConnectionsService:
         return item
 
     def get_transactions(
-        self, account_id: str, tx_range: TransactionRange = TransactionRange.ALL
+        self, account_id: str, tx_range: TransactionRange = TransactionRange.SIX_MONTH
     ):
         """Gets transactions for an account given its id"""
         filter_params = {}
@@ -86,16 +86,15 @@ class FinancialConnectionsService:
             start_date = now - timedelta(days=7)
         elif tx_range == TransactionRange.MONTH:
             start_date = now - timedelta(days=30)
-        elif tx_range == TransactionRange.YEAR:
+        elif tx_range == TransactionRange.THREE_MONTH:
             start_date = now - timedelta(days=90)
-        elif tx_range == TransactionRange.ALL:
+        elif tx_range == TransactionRange.SIX_MONTH:
             start_date = now - timedelta(days=180)
 
         start_timestamp = int(start_date.timestamp())
         filter_params = {"transacted_at": {"gte": start_timestamp}}
 
-        while has_more and len(all_transactions) < 10000:
-            print(f"Start After ID: {start_after_id}")
+        while has_more and len(all_transactions) < 5000:
             transactions = self.__stripe.financial_connections.Transaction.list(
                 account=account_id,
                 limit=100,
@@ -105,7 +104,7 @@ class FinancialConnectionsService:
 
             data = transactions.get("data", [])
             has_more = transactions.get("has_more", False)
-            print(f"TEST, TRANSACTIONS: {transactions}")
+
             if len(data) > 0 and has_more:
                 start_after_id = data[-1]["id"]
 
