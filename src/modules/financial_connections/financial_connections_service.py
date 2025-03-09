@@ -79,19 +79,20 @@ class FinancialConnectionsService:
         all_transactions: list[dict] = []
         start_after_id = None
 
-        if tx_range != TransactionRange.ALL:
-            now = datetime.now(timezone.utc)
-            start_date = now
+        now = datetime.now(timezone.utc)
+        start_date = now
 
-            if tx_range == TransactionRange.WEEK:
-                start_date = now - timedelta(days=7)
-            elif tx_range == TransactionRange.MONTH:
-                start_date = now - timedelta(days=30)
-            elif tx_range == TransactionRange.YEAR:
-                start_date = now - timedelta(days=365)
+        if tx_range == TransactionRange.WEEK:
+            start_date = now - timedelta(days=7)
+        elif tx_range == TransactionRange.MONTH:
+            start_date = now - timedelta(days=30)
+        elif tx_range == TransactionRange.YEAR:
+            start_date = now - timedelta(days=90)
+        elif tx_range == TransactionRange.ALL:
+            start_date = now - timedelta(days=180)
 
-            start_timestamp = int(start_date.timestamp())
-            filter_params = {"transacted_at": {"gte": start_timestamp}}
+        start_timestamp = int(start_date.timestamp())
+        filter_params = {"transacted_at": {"gte": start_timestamp}}
 
         while has_more and len(all_transactions) < 10000:
             print(f"Start After ID: {start_after_id}")
