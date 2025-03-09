@@ -3,7 +3,6 @@ This module contains all logic needed for interacting with the Stripe Financial 
 """
 
 from datetime import datetime, timedelta, timezone
-from typing import List
 
 from src.utils import TransactionRange
 
@@ -95,6 +94,7 @@ class FinancialConnectionsService:
         )
 
         data = transactions.get("data", [])
+
         return data
 
     def get_transaction_by_id(self, txn_id: str):
@@ -103,13 +103,9 @@ class FinancialConnectionsService:
 
         return transaction
 
-    def get_transaction_data(
-        self, customer_id: str, tx_range: TransactionRange, omit: List[str]
-    ):
+    def get_transaction_data(self, customer_id: str, tx_range: TransactionRange):
         """Gets transaction data about an account"""
         accounts = self.get_accounts(customer_id=customer_id)
-        accounts = [account for account in accounts if account.id not in omit]
-        curr_total = self.__get_current_accounts_total(accounts)
 
         all_transactions = []
         for account in accounts:
@@ -117,64 +113,22 @@ class FinancialConnectionsService:
                 account_transactions = self.get_transactions(
                     account_id=account.id, tx_range=tx_range
                 )
-                all_transactions.extend(account_transactions)
+
+                txn_with_inst = [
+                    {
+                        **txn,
+                        "institution_name": account.get("institution_name", "Unknown"),
+                    }
+                    for txn in account_transactions
+                ]
+
+                all_transactions.extend(txn_with_inst)
             except Exception as e:
                 print(e)
 
         all_transactions.sort(key=lambda x: x.get("transacted_at", 0), reverse=True)
 
-        running_total = self.__get_running_total(
-            curr_total=curr_total, sorted_transactions=all_transactions
-        )
-
-        return {"transactions": all_transactions, "running_total": running_total}
-
-    def get_customer_transactions(self, customer_id: str, omit: List[str]):
-        """Gets all transactions for a customer, grouped by day with running totals"""
-        accounts = self.get_accounts(customer_id=customer_id)
-        accounts = [account for account in accounts if account.id not in omit]
-        curr_total = self.__get_current_accounts_total(accounts)
-
-        # Collect all transactions from all accounts
-        all_transactions = []
-        for account in accounts:
-            try:
-                account_transactions = self.get_transactions(account.id)
-                all_transactions.extend(account_transactions)
-            except Exception as e:
-                print(e)
-
-        # Group transactions by day
-        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        transactions_by_day = {today: curr_total}
-
-        # Sort transactions by date (newest first)
-        all_transactions.sort(key=lambda x: x.get("transacted_at", 0), reverse=True)
-
-        # Start with current total and work backwards
-        running_total = curr_total
-
-        for transaction in all_transactions:
-            # Convert timestamp to date string (YYYY-MM-DD)
-            timestamp = transaction.get("transacted_at", 0)
-            date = datetime.fromtimestamp(timestamp, tz=timezone.utc).strftime(
-                "%Y-%m-%d"
-            )
-
-            # Subtract transaction amount from running total (since we're going backwards)
-            amount = transaction.get("amount", 0)
-            running_total -= amount
-
-            # Initialize or update the day's entry
-            transactions_by_day[date] = running_total
-
-        # Convert to list of dicts format
-        daily_totals = [
-            {"date": date, "total": total}
-            for date, total in transactions_by_day.items()
-        ]
-
-        return daily_totals
+        return all_transactions
 
     def disconnect_account(self, account_id: str):
         """Disconnects the account with the given account ID from a users profile"""
@@ -224,29 +178,6 @@ class FinancialConnectionsService:
 
         return res
 
-    def __get_current_accounts_total(self, accounts):
-        """Sums up total account balances given all of a customers accountsdf"""
-        total = 0
-        for account in accounts:
-            try:
-                balance = account.get("balance", None)
-                if balance is None:
-                    continue
-
-                current = balance.get("current", None)
-                if current is None:
-                    continue
-
-                usd = getattr(current, "usd", 0)
-                if account.category == "credit":
-                    total -= abs(usd)
-                else:
-                    total += usd
-            except AttributeError:
-                continue
-
-        return total
-
     def __update_account(self, account):
         """Performs approriate update actions on an account"""
         if account.balance_refresh is None and account.status == "active":
@@ -271,32 +202,3 @@ class FinancialConnectionsService:
                 next_tx_refresh = datetime.fromtimestamp(tx_timestamp, tz=timezone.utc)
                 if current_time >= next_tx_refresh:
                     self.__refresh_account_transactions(account_id=account.id)
-
-    def __get_running_total(self, curr_total, sorted_transactions):
-        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        transactions_by_day = {today: curr_total}
-
-        # Start with current total and work backwards
-        running_total = curr_total
-
-        for transaction in sorted_transactions:
-            # Convert timestamp to date string (YYYY-MM-DD)
-            timestamp = transaction.get("transacted_at", 0)
-            date = datetime.fromtimestamp(timestamp, tz=timezone.utc).strftime(
-                "%Y-%m-%d"
-            )
-
-            # Subtract transaction amount from running total (since we're going backwards)
-            amount = transaction.get("amount", 0)
-            running_total -= amount
-
-            # Initialize or update the day's entry
-            transactions_by_day[date] = running_total
-
-        # Convert to list of dicts format
-        daily_totals = [
-            {"date": date, "total": total}
-            for date, total in transactions_by_day.items()
-        ]
-
-        return daily_totals

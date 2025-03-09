@@ -1,7 +1,6 @@
 """This module contains the handler for all Financial Connections functionality"""
 
 import re
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr
@@ -38,9 +37,9 @@ class FinancialConnectionsHandler:
         self.router.delete("/accounts/{account_id}")(self.disconnect_account)
 
         # Transactions routes
-        self.router.get("/transactions/customer/{customer_id}")(
-            self.get_customer_transactions
-        )
+        # self.router.get("/transactions/customer/{customer_id}")(
+        #     self.get_customer_transactions
+        # )
         self.router.get("/transactions/{transaction_id}")(self.get_transaction)
         self.router.post("/transactions/data")(self.get_transaction_data)
 
@@ -102,24 +101,6 @@ class FinancialConnectionsHandler:
                 detail=f"Transaction not found: {transaction_id}\n\nError: {e}",
             ) from e
 
-    async def get_customer_transactions(
-        self, customer_id: str, omit: Optional[str] = None
-    ):
-        """Gets broad transaction data for a customer"""
-        try:
-            omit_list = []
-            if omit:
-                omit_list = [item.replace("?", "") for item in omit.split(",")]
-
-            return self.__financial_connections_service.get_customer_transactions(
-                customer_id, omit_list
-            )
-        except Exception as e:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Customer not found: {customer_id}\n\nError: {e}",
-            ) from e
-
     async def get_transactions(self, account_id: str):
         """Get transactions for a specific account"""
         if not self.__validate_account_id(account_id):
@@ -134,17 +115,16 @@ class FinancialConnectionsHandler:
             ) from e
 
     async def get_transaction_data(self, body: TransactionData):
-        """Get transactions with omit and range"""
+        """Get transactions with range"""
         try:
             customer_id = body.get("customer_id", None)
             if not customer_id or not self.__validate_customer_id(customer_id):
                 raise HTTPException(status_code=400, detail="Invalid account ID format")
 
             tx_range = body.get("range", TransactionRange.WEEK)
-            omit = body.get("omit", [])
 
             return self.__financial_connections_service.get_transaction_data(
-                customer_id=customer_id, tx_range=tx_range, omit=omit
+                customer_id=customer_id, tx_range=tx_range
             )
         except Exception as e:
             raise HTTPException(

@@ -1,7 +1,7 @@
 """Types for financial connections functionality"""
 
 from enum import Enum
-from typing import List, TypedDict
+from typing import TypedDict
 
 
 class TransactionRange(str, Enum):
@@ -18,4 +18,3 @@ class TransactionData(TypedDict):
 
     customer_id: str
     range: TransactionRange
-    omit: List[str]
