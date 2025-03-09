@@ -94,8 +94,9 @@ class FinancialConnectionsService:
         )
 
         data = transactions.get("data", [])
+        filtered = [txn for txn in data if txn.status == 'posted']
 
-        return data
+        return filtered
 
     def get_transaction_by_id(self, txn_id: str):
         """Gets an transaction by its ID"""
