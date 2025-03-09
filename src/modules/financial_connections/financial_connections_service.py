@@ -2,8 +2,10 @@
 This module contains all logic needed for interacting with the Stripe Financial Connections API
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import List
+
+from src.utils import TransactionRange
 
 
 class FinancialConnectionsService:
@@ -69,10 +71,27 @@ class FinancialConnectionsService:
         item = res.get("Item", {})
         return item
 
-    def get_transactions(self, account_id: str):
-        """Gets transactions for an acount given its id"""
+    def get_transactions(
+        self, account_id: str, tx_range: TransactionRange = TransactionRange.ALL
+    ):
+        """Gets transactions for an account given its id"""
+        filter_params = {}
+        if tx_range != TransactionRange.ALL:
+            now = datetime.now(timezone.utc)
+            start_date = now
+
+            if tx_range == TransactionRange.WEEK:
+                start_date = now - timedelta(days=7)
+            elif tx_range == TransactionRange.MONTH:
+                start_date = now - timedelta(days=30)
+            elif tx_range == TransactionRange.YEAR:
+                start_date = now - timedelta(days=365)
+
+            start_timestamp = int(start_date.timestamp())
+            filter_params = {"transacted_at": {"gte": start_timestamp}}
+
         transactions = self.__stripe.financial_connections.Transaction.list(
-            account=account_id, limit=100
+            account=account_id, limit=100, **filter_params
         )
 
         data = transactions.get("data", [])
@@ -83,6 +102,32 @@ class FinancialConnectionsService:
         transaction = self.__stripe.financial_connections.Transaction.retrieve(txn_id)
 
         return transaction
+
+    def get_transaction_data(
+        self, customer_id: str, tx_range: TransactionRange, omit: List[str]
+    ):
+        """Gets transaction data about an account"""
+        accounts = self.get_accounts(customer_id=customer_id)
+        accounts = [account for account in accounts if account.id not in omit]
+        curr_total = self.__get_current_accounts_total(accounts)
+
+        all_transactions = []
+        for account in accounts:
+            try:
+                account_transactions = self.get_transactions(
+                    account_id=account.id, tx_range=tx_range
+                )
+                all_transactions.extend(account_transactions)
+            except Exception as e:
+                print(e)
+
+        all_transactions.sort(key=lambda x: x.get("transacted_at", 0), reverse=True)
+
+        running_total = self.__get_running_total(
+            curr_total=curr_total, sorted_transactions=all_transactions
+        )
+
+        return {"transactions": all_transactions, "running_total": running_total}
 
     def get_customer_transactions(self, customer_id: str, omit: List[str]):
         """Gets all transactions for a customer, grouped by day with running totals"""
@@ -226,3 +271,32 @@ class FinancialConnectionsService:
                 next_tx_refresh = datetime.fromtimestamp(tx_timestamp, tz=timezone.utc)
                 if current_time >= next_tx_refresh:
                     self.__refresh_account_transactions(account_id=account.id)
+
+    def __get_running_total(self, curr_total, sorted_transactions):
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        transactions_by_day = {today: curr_total}
+
+        # Start with current total and work backwards
+        running_total = curr_total
+
+        for transaction in sorted_transactions:
+            # Convert timestamp to date string (YYYY-MM-DD)
+            timestamp = transaction.get("transacted_at", 0)
+            date = datetime.fromtimestamp(timestamp, tz=timezone.utc).strftime(
+                "%Y-%m-%d"
+            )
+
+            # Subtract transaction amount from running total (since we're going backwards)
+            amount = transaction.get("amount", 0)
+            running_total -= amount
+
+            # Initialize or update the day's entry
+            transactions_by_day[date] = running_total
+
+        # Convert to list of dicts format
+        daily_totals = [
+            {"date": date, "total": total}
+            for date, total in transactions_by_day.items()
+        ]
+
+        return daily_totals

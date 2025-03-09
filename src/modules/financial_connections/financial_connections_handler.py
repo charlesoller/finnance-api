@@ -6,6 +6,8 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr
 
+from src.utils import TransactionData, TransactionRange
+
 
 class CustomerAuthRequest(BaseModel):
     """Request format for authorizing via Stripe"""
@@ -40,6 +42,7 @@ class FinancialConnectionsHandler:
             self.get_customer_transactions
         )
         self.router.get("/transactions/{transaction_id}")(self.get_transaction)
+        self.router.post("/transactions/data")(self.get_transaction_data)
 
     def __validate_customer_id(self, customer_id: str) -> bool:
         """Validates the customer ID format"""
@@ -128,6 +131,25 @@ class FinancialConnectionsHandler:
             raise HTTPException(
                 status_code=404,
                 detail=f"Transactions not found for account: {account_id}\n\nError: {e}",
+            ) from e
+
+    async def get_transaction_data(self, body: TransactionData):
+        """Get transactions with omit and range"""
+        try:
+            customer_id = body.get("customer_id", None)
+            if not customer_id or not self.__validate_customer_id(customer_id):
+                raise HTTPException(status_code=400, detail="Invalid account ID format")
+
+            tx_range = body.get("range", TransactionRange.WEEK)
+            omit = body.get("omit", [])
+
+            return self.__financial_connections_service.get_transaction_data(
+                customer_id=customer_id, tx_range=tx_range, omit=omit
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Error retrieving transaction data\n\nError: {e}",
             ) from e
 
     async def handle_auth_flow(self, body: CustomerAuthRequest):
