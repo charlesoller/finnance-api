@@ -75,6 +75,10 @@ class FinancialConnectionsService:
     ):
         """Gets transactions for an account given its id"""
         filter_params = {}
+        has_more = True
+        all_transactions: list[dict] = []
+        start_after_id = None
+
         if tx_range != TransactionRange.ALL:
             now = datetime.now(timezone.utc)
             start_date = now
@@ -89,14 +93,26 @@ class FinancialConnectionsService:
             start_timestamp = int(start_date.timestamp())
             filter_params = {"transacted_at": {"gte": start_timestamp}}
 
-        transactions = self.__stripe.financial_connections.Transaction.list(
-            account=account_id, limit=100, **filter_params
-        )
+        while has_more and len(all_transactions) < 2000:
+            transactions = self.__stripe.financial_connections.Transaction.list(
+                account=account_id,
+                limit=100,
+                starting_after=start_after_id,
+                **filter_params,
+            )
 
-        data = transactions.get("data", [])
-        filtered = [txn for txn in data if txn.status == 'posted']
+            data = transactions.get("data", [])
+            has_more = transactions.get("has_more", False)
+            if len(data) > 0 and has_more:
+                start_after_id = data[-1].id
 
-        return filtered
+            filtered = [txn for txn in data if txn.status == "posted"]
+            all_transactions.extend(filtered)
+
+            if not has_more:
+                break
+
+        return all_transactions
 
     def get_transaction_by_id(self, txn_id: str):
         """Gets an transaction by its ID"""
