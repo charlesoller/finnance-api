@@ -94,6 +94,7 @@ class FinancialConnectionsService:
             filter_params = {"transacted_at": {"gte": start_timestamp}}
 
         while has_more and len(all_transactions) < 10000:
+            print(f"Start After ID: {start_after_id}")
             transactions = self.__stripe.financial_connections.Transaction.list(
                 account=account_id,
                 limit=100,
