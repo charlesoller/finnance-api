@@ -135,7 +135,8 @@ class FinancialConnectionsService:
                 txn_with_inst = [
                     {
                         **txn,
-                        "institution_name": account.get("institution_name", "Unknown"),
+                        "institution_name": account.get("institution_name", None),
+                        "acct_display_name": account.get("display_name", None)
                     }
                     for txn in account_transactions
                 ]
