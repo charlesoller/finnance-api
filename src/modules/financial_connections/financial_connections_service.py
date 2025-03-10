@@ -136,7 +136,8 @@ class FinancialConnectionsService:
                     {
                         **txn,
                         "institution_name": account.get("institution_name", None),
-                        "acct_display_name": account.get("display_name", None)
+                        "acct_display_name": account.get("display_name", None),
+                        "acct_last4": account.get("last4", None)
                     }
                     for txn in account_transactions
                 ]
