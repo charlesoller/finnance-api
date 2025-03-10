@@ -108,8 +108,7 @@ class FinancialConnectionsService:
             if len(data) > 0 and has_more:
                 start_after_id = data[-1]["id"]
 
-            filtered = [txn for txn in data if txn.status == "posted"]
-            all_transactions.extend(filtered)
+            all_transactions.extend(data)
 
             if not has_more:
                 break
