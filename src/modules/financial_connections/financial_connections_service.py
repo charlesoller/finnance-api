@@ -281,7 +281,8 @@ class FinancialConnectionsService:
             }
             for txn in wealthfront_deposits
         ]
-        return modified_deposits
+        corrected_transactions = transactions.extend(modified_deposits)
+        return corrected_transactions
 
     def __dedupe_pending_transactions(self, transactions):
         """Dedupes transactions that have both a pending and posted status"""
