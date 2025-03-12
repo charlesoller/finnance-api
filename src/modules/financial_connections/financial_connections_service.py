@@ -230,14 +230,11 @@ class FinancialConnectionsService:
 
     def __clean_transaction_data(self, transactions, accounts):
         """Cleans the transaction data to display properly to user"""
-        print("STARTING TXN CLEAN")
         corrected_txns = self.__handle_acct_edge_cases(
             accounts=accounts, transactions=transactions
         )
-        print(f"CORRECTED TXNS: {corrected_txns}")
-        # cleaned_txns = self.__dedupe_pending_transactions(transactions=corrected_txns)
-        # print(f"DEDUPED TXNS: {cleaned_txns}")
-        return corrected_txns
+        cleaned_txns = self.__dedupe_pending_transactions(transactions=corrected_txns)
+        return cleaned_txns
 
     def __handle_acct_edge_cases(self, accounts, transactions):
         """Handles all edge case account types and corrects them"""
