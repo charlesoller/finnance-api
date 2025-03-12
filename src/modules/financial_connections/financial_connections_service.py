@@ -137,7 +137,7 @@ class FinancialConnectionsService:
                         **txn,
                         "institution_name": account.get("institution_name", None),
                         "acct_display_name": account.get("display_name", None),
-                        "acct_last4": account.get("last4", None)
+                        "acct_last4": account.get("last4", None),
                     }
                     for txn in account_transactions
                 ]
@@ -146,9 +146,14 @@ class FinancialConnectionsService:
             except Exception as e:
                 print(e)
 
-        all_transactions.sort(key=lambda x: x.get("transacted_at", 0), reverse=True)
+        corrected_transactions = self.__clean_transaction_data(
+            transactions=all_transactions, accounts=accounts
+        )
+        corrected_transactions.sort(
+            key=lambda x: x.get("transacted_at", 0), reverse=True
+        )
 
-        return all_transactions
+        return corrected_transactions
 
     def disconnect_account(self, account_id: str):
         """Disconnects the account with the given account ID from a users profile"""
@@ -222,3 +227,88 @@ class FinancialConnectionsService:
                 next_tx_refresh = datetime.fromtimestamp(tx_timestamp, tz=timezone.utc)
                 if current_time >= next_tx_refresh:
                     self.__refresh_account_transactions(account_id=account.id)
+
+    def __clean_transaction_data(self, transactions, accounts):
+        """Cleans the transaction data to display properly to user"""
+        corrected_txns = self.__handle_acct_edge_cases(
+            accounts=accounts, transactions=transactions
+        )
+        cleaned_txns = self.__dedupe_pending_transactions(transactions=corrected_txns)
+        return cleaned_txns
+
+    def __handle_acct_edge_cases(self, accounts, transactions):
+        """Handles all edge case account types and corrects them"""
+        corrected_txns = self.__handle_wealthfront_edge_case(
+            accounts=accounts, transactions=transactions
+        )
+        # Add more edge case handling here as needed
+        return corrected_txns
+
+    def __handle_wealthfront_edge_case(self, accounts, transactions):
+        """Handles fixing Transaction data for Wealthfront Cash Accounts e2e"""
+        wealthfront_cash_acct = next(
+            filter(
+                lambda acct: acct.get("institution_name") == "Wealthfront" and acct.get("category") == "cash",
+                accounts,
+            ),
+            None,
+        )
+        if wealthfront_cash_acct:
+            corrected_transactions = self.__build_wealthfront_history(
+                transactions=transactions, wf_acct=wealthfront_cash_acct
+            )
+            return corrected_transactions
+        return transactions
+
+    def __build_wealthfront_history(self, transactions, wf_acct):
+        """Builds wealthfront deposit history, as Wealthfront doesn't provide this"""
+        wealthfront_deposits = [
+            txn
+            for txn in transactions
+            if "Wealthfront EDI PYMNTS" in txn.get("description", "")
+        ]
+        modified_deposits = [
+            {
+                **txn,
+                "account": wf_acct.get("id", None),
+                "institution_name": wf_acct.get("institution_name", "Wealthfront"),
+                "acct_display_name": wf_acct.get(
+                    "display_name", "Individual Cash Account"
+                ),
+                "acct_last4": wf_acct.get("last4", None),
+                "amount": abs(txn.get("amount", 0)),
+                "description": "Wealthfront Cash Account Deposit",
+            }
+            for txn in wealthfront_deposits
+        ]
+        return modified_deposits
+
+    def __dedupe_pending_transactions(self, transactions):
+        """Dedupes transactions that have both a pending and posted status"""
+        # Group transactions by their transacted_at timestamp
+        grouped_by_time = {}
+        for txn in transactions:
+            transacted_at = txn.get("transacted_at")
+            if transacted_at not in grouped_by_time:
+                grouped_by_time[transacted_at] = []
+            grouped_by_time[transacted_at].append(txn)
+
+        # For each group, keep posted transactions and remove pending ones if both exist
+        deduped_transactions = []
+        for time_group in grouped_by_time.values():
+            if len(time_group) > 1:
+                # Check if we have both posted and pending transactions
+                has_posted = any(txn.get("status") == "posted" for txn in time_group)
+                if has_posted:
+                    # Keep only posted transactions
+                    deduped_transactions.extend(
+                        [txn for txn in time_group if txn.get("status") == "posted"]
+                    )
+                else:
+                    # If no posted transactions, keep all
+                    deduped_transactions.extend(time_group)
+            else:
+                # Only one transaction at this time, keep it
+                deduped_transactions.extend(time_group)
+
+        return deduped_transactions

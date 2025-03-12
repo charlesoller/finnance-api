@@ -14,7 +14,7 @@ class TransactionRange(str, Enum):
 
 
 class TransactionData(TypedDict):
-    """This class represents the shape of ChatMessage data"""
+    """This class represents the shape of the Transaction data request"""
 
     customer_id: str
     range: TransactionRange
