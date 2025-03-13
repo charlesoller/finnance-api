@@ -2,3 +2,4 @@
 
 from src.modules.financial_connections import *
 from src.modules.sessions import *
+from src.modules.users import *

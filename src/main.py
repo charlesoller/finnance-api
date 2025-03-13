@@ -15,6 +15,8 @@ from src.modules import (
     FinancialConnectionsService,
     SessionsHandler,
     SessionsService,
+    UsersHandler,
+    UsersService,
 )
 
 load_dotenv()
@@ -45,10 +47,12 @@ else:
 CHAT_LOGS_TABLE_NAME = "chat_logs"
 SESSION_INFO_TABLE_NAME = "session_info"
 CUSTOMERS_TABLE_NAME = "customers"
+USERS_TABLE_NAME = "users"
 
 chat_logs_db = dynamodb.Table(CHAT_LOGS_TABLE_NAME)
 session_info_db = dynamodb.Table(SESSION_INFO_TABLE_NAME)
 customers_db = dynamodb.Table(CUSTOMERS_TABLE_NAME)
+users_db = dynamodb.Table(USERS_TABLE_NAME)
 
 # Services
 financial_connections_service = FinancialConnectionsService(
@@ -57,12 +61,14 @@ financial_connections_service = FinancialConnectionsService(
 sessions_service = SessionsService(
     chat_logs_db=chat_logs_db, session_info_db=session_info_db
 )
+users_service = UsersService(db=users_db)
 
 # Handlers
 sessions_handler = SessionsHandler(sessions_service)
 financial_connections_handler = FinancialConnectionsHandler(
     financial_connections_service
 )
+users_handler = UsersHandler(users_service)
 
 # App Setup
 app = FastAPI()
@@ -77,6 +83,7 @@ app.add_middleware(
 
 app.include_router(sessions_handler.router)
 app.include_router(financial_connections_handler.router)
+app.include_router(users_handler.router)
 
 
 # Test Route
